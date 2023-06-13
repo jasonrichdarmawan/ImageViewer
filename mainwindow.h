@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QToolBar>
@@ -33,12 +34,14 @@ private:
     QToolBar *viewToolBar_;
 
     QAction *openAction_;
+    QAction *saveAsAction_;
     QAction *exitAction_;
     QAction *zoomInAction_;
     QAction *zoomOutAction_;
     QAction *previousImageAction_;
     QAction *nextImageAction_;
 
+    QGraphicsPixmapItem *currentImage_;
     QGraphicsScene *imageScene_;
     QGraphicsView *imageView_;
 
@@ -47,5 +50,8 @@ private:
 
 private slots:
     void openImage();
+    void saveAs();
+    void zoomIn();
+    void zoomOut();
 };
 #endif // MAINWINDOW_H

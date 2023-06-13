@@ -5,10 +5,12 @@
 #include <QStatusBar>
 #include <QFileDialog>
 #include <QDebug>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 //    , ui(new Ui::MainWindow)
+    , currentImage_(nullptr)
 {
 //    ui->setupUi(this);
     initUI();
@@ -23,6 +25,7 @@ void MainWindow::createActions()
 {
     // new action
     openAction_ = new QAction("Open", this);
+    saveAsAction_ = new QAction("Save As", this);
     exitAction_ = new QAction("Exit", this);
     zoomInAction_ = new QAction("Zoom In", this);
     zoomOutAction_ = new QAction("Zoom Out", this);
@@ -31,6 +34,7 @@ void MainWindow::createActions()
 
     // add action to the menu bar
     fileMenu_->addAction(openAction_);
+    fileMenu_->addAction(saveAsAction_);
     /// known behavior: The Exit action in the menu bar is not displayed on Mac OS.
     fileMenu_->addAction(exitAction_);
 
@@ -49,7 +53,11 @@ void MainWindow::createActions()
 
     // connect signal to slots
     connect(openAction_, SIGNAL(triggered(bool)), this, SLOT(openImage()));
+    connect(saveAsAction_, SIGNAL(triggered(bool)), this, SLOT(saveAs()));
     connect(exitAction_, SIGNAL(triggered(bool)), QApplication::instance(), SLOT(quit()));
+
+    connect(zoomInAction_, SIGNAL(triggered(bool)), this, SLOT(zoomIn()));
+    connect(zoomOutAction_, SIGNAL(triggered(bool)), this, SLOT(zoomOut()));
 }
 
 void MainWindow::initUI()
@@ -84,7 +92,8 @@ void MainWindow::showImage(QString path)
     imageView_->resetTransform();
 
     QPixmap image(path);
-    imageScene_->addPixmap(image);
+    /// necessary when user save the image.
+    currentImage_ = imageScene_->addPixmap(image);
     imageScene_->update();
     /// necessary when user open 2nd image with smaller width and height.
     imageView_->setSceneRect(image.rect());
@@ -115,4 +124,47 @@ void MainWindow::openImage()
         filePaths = dialog.selectedFiles();
         showImage(filePaths.at(0));
     }
+}
+
+void MainWindow::saveAs()
+{
+    qDebug() << "slot saveAs is called.";
+
+    if (currentImage_ == nullptr)
+    {
+        QMessageBox::information(this, "Information", "Nothing to save.");
+        return;
+    }
+
+    QFileDialog dialog(this);
+    dialog.setWindowTitle("Save Image As ...");
+
+    dialog.setFileMode(QFileDialog::AnyFile);
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    dialog.setNameFilter(tr("Images (*.png *.bmp *.jpg)"));
+
+    QStringList fileNames;
+    if (dialog.exec())
+    {
+        fileNames = dialog.selectedFiles();
+        if (QRegExp(".+\\.(png|bmp|jpg)").exactMatch(fileNames.at(0)))
+        {
+            // TODO: Tech Debt 1 the size of the saved image is not the same as the original image.
+            currentImage_->pixmap().save(fileNames.at(0));
+        }
+        else
+        {
+            QMessageBox::information(this, "Information", "Save error: bad format or filename.");
+        }
+    }
+}
+
+void MainWindow::zoomIn()
+{
+    imageView_->scale(1.1, 1.1);
+}
+
+void MainWindow::zoomOut()
+{
+    imageView_->scale(0.9, 0.9);
 }
