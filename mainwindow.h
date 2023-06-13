@@ -41,6 +41,7 @@ private:
     QAction *previousImageAction_;
     QAction *nextImageAction_;
 
+    QString currentImagePath_;
     QGraphicsPixmapItem *currentImage_;
     QGraphicsScene *imageScene_;
     QGraphicsView *imageView_;
@@ -53,5 +54,7 @@ private slots:
     void saveAs();
     void zoomIn();
     void zoomOut();
+    void previousImage();
+    void nextImage();
 };
 #endif // MAINWINDOW_H

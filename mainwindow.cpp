@@ -58,6 +58,8 @@ void MainWindow::createActions()
 
     connect(zoomInAction_, SIGNAL(triggered(bool)), this, SLOT(zoomIn()));
     connect(zoomOutAction_, SIGNAL(triggered(bool)), this, SLOT(zoomOut()));
+    connect(previousImageAction_, SIGNAL(triggered(bool)), this, SLOT(previousImage()));
+    connect(nextImageAction_, SIGNAL(triggered(bool)), this, SLOT(nextImage()));
 }
 
 void MainWindow::initUI()
@@ -104,6 +106,9 @@ void MainWindow::showImage(QString path)
                          .arg(image.height())
                          .arg(QFile(path).size());
     mainStatusLabel_->setText(status);
+
+    /// necessary when user navigate between previous and next image.
+    currentImagePath_ = path;
 }
 
 void MainWindow::openImage()
@@ -167,4 +172,47 @@ void MainWindow::zoomIn()
 void MainWindow::zoomOut()
 {
     imageView_->scale(0.9, 0.9);
+}
+
+void MainWindow::previousImage()
+{
+    QFileInfo currentFile(currentImagePath_);
+    QDir dir = currentFile.absoluteDir();
+
+    QStringList nameFilters;
+    nameFilters << "*.png" << "*.bmp" << "*.jpg";
+    QStringList fileNames = dir.entryList(nameFilters, QDir::Files, QDir::Name);
+    qDebug() << fileNames;
+
+    int currentIndex = fileNames.indexOf(QRegExp(QRegExp::escape(currentFile.fileName())));
+    if (currentIndex > 0)
+    {
+        showImage(dir.absoluteFilePath(fileNames.at(currentIndex - 1)));
+    }
+    else {
+        QMessageBox::information(this, "Information", "Current image is the first one.");
+    }
+}
+
+void MainWindow::nextImage()
+{
+    QFileInfo currentFile(currentImagePath_);
+    QDir dir = currentFile.absoluteDir();
+
+    QStringList nameFilters;
+    nameFilters << "*.png" << "*.bmp" << "*.jpg";
+    QStringList fileNames = dir.entryList(nameFilters, QDir::Files, QDir::Name);
+    qDebug() << fileNames;
+
+    /// necessary when current.fileName() output is `a.jpg`
+    /// `.` matches any character (except for line terminators)
+    int currentIndex = fileNames.indexOf(QRegExp(QRegExp::escape(currentFile.fileName())));
+    if (currentIndex < fileNames.size() - 1)
+    {
+        showImage(dir.absoluteFilePath(fileNames.at(currentIndex + 1)));
+    }
+    else
+    {
+        QMessageBox::information(this, "Information", "Current image is the last one.");
+    }
 }
