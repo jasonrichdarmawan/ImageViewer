@@ -32,6 +32,13 @@ void MainWindow::createActions()
     previousImageAction_ = new QAction("Previous Image", this);
     nextImageAction_ = new QAction("Next Image", this);
 
+    // disable action when imageScene_ is clear.
+    saveAsAction_->setEnabled(false);
+    zoomInAction_->setEnabled(false);
+    zoomOutAction_->setEnabled(false);
+    previousImageAction_->setEnabled(false);
+    nextImageAction_->setEnabled(false);
+
     // add action to the menu bar
     fileMenu_->addAction(openAction_);
     fileMenu_->addAction(saveAsAction_);
@@ -155,6 +162,12 @@ void MainWindow::openImage()
         filePaths = dialog.selectedFiles();
         showImage(filePaths.at(0));
     }
+
+    // enable action when imageScene_ is not clear.
+    zoomInAction_->setEnabled(true);
+    zoomOutAction_->setEnabled(true);
+    previousImageAction_->setEnabled(true);
+    nextImageAction_->setEnabled(true);
 }
 
 void MainWindow::saveAs()
@@ -213,9 +226,11 @@ void MainWindow::previousImage()
     int currentIndex = fileNames.indexOf(QRegExp(QRegExp::escape(currentFile.fileName())));
     if (currentIndex > 0)
     {
+        nextImageAction_->setEnabled(true);
         showImage(dir.absoluteFilePath(fileNames.at(currentIndex - 1)));
     }
     else {
+        previousImageAction_->setEnabled(false);
         QMessageBox::information(this, "Information", "Current image is the first one.");
     }
 }
@@ -235,10 +250,12 @@ void MainWindow::nextImage()
     int currentIndex = fileNames.indexOf(QRegExp(QRegExp::escape(currentFile.fileName())));
     if (currentIndex < fileNames.size() - 1)
     {
+        previousImageAction_->setEnabled(true);
         showImage(dir.absoluteFilePath(fileNames.at(currentIndex + 1)));
     }
     else
     {
+        nextImageAction_->setEnabled(false);
         QMessageBox::information(this, "Information", "Current image is the last one.");
     }
 }
