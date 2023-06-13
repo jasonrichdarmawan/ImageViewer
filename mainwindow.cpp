@@ -62,6 +62,31 @@ void MainWindow::createActions()
     connect(nextImageAction_, SIGNAL(triggered(bool)), this, SLOT(nextImage()));
 }
 
+void MainWindow::createShortcuts()
+{
+    QList<QKeySequence> shortcuts;
+
+    // zoom in
+    shortcuts << Qt::Key_Plus << Qt::Key_Equal;
+    zoomInAction_->setShortcuts(shortcuts);
+    shortcuts.clear();
+
+    // zoom out
+    shortcuts << Qt::Key_Minus << Qt::Key_Underscore;
+    zoomOutAction_->setShortcuts(shortcuts);
+    shortcuts.clear();
+
+    // previous image
+    shortcuts << Qt::Key_Up << Qt::Key_Left;
+    previousImageAction_->setShortcuts(shortcuts);
+    shortcuts.clear();
+
+    // next image
+    shortcuts << Qt::Key_Down << Qt::Key_Right;
+    nextImageAction_->setShortcuts(shortcuts);
+    shortcuts.clear();
+}
+
 void MainWindow::initUI()
 {
     this->resize(800,600);
@@ -75,6 +100,7 @@ void MainWindow::initUI()
     viewToolBar_ = addToolBar("View");
 
     createActions();
+    createShortcuts();
 
     // main area for image display
     imageScene_ = new QGraphicsScene(this);

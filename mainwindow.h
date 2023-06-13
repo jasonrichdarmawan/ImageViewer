@@ -22,6 +22,7 @@ public:
 
 private:
     void createActions();
+    void createShortcuts();
     void initUI();
     void showImage(QString path);
 
