@@ -289,6 +289,8 @@ void MainWindow::blurImage()
     QPixmap pixmap = currentImage_->pixmap();
     QImage image = pixmap.toImage();
 
+    /// necessary for QImage -> cv::Mat conversion
+    /// reason: default order of colors in OpenCV is BGR, while in Qt is RGB.
     image = image.convertToFormat(QImage::Format_RGB888);
     cv::Mat mat = cv::Mat(image.height(), image.width(), CV_8UC3, image.bits(), image.bytesPerLine());
 
@@ -296,6 +298,7 @@ void MainWindow::blurImage()
     cv::blur(mat, tmp, cv::Size(8,8));
     mat = tmp;
 
+    /// necessary for cv::Mat -> QImage conversion
     QImage image_blurred(mat.data, mat.cols, mat.rows, mat.step, QImage::Format_RGB888);
     pixmap = QPixmap::fromImage(image_blurred);
 
