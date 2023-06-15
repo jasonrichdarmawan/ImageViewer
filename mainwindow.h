@@ -30,17 +30,22 @@ private:
 //    Ui::MainWindow *ui;
     QMenu *fileMenu_;
     QMenu *viewMenu_;
+    QMenu *editMenu_;
 
     QToolBar *fileToolBar_;
     QToolBar *viewToolBar_;
+    QToolBar *editToolBar_;
 
     QAction *openAction_;
     QAction *saveAsAction_;
     QAction *exitAction_;
+
     QAction *zoomInAction_;
     QAction *zoomOutAction_;
     QAction *previousImageAction_;
     QAction *nextImageAction_;
+
+    QAction *blurAction_;
 
     QString currentImagePath_;
     QGraphicsPixmapItem *currentImage_;
@@ -53,9 +58,12 @@ private:
 private slots:
     void openImage();
     void saveAs();
+
     void zoomIn();
     void zoomOut();
     void previousImage();
     void nextImage();
+
+    void blurImage();
 };
 #endif // MAINWINDOW_H

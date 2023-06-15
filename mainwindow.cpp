@@ -6,6 +6,7 @@
 #include <QFileDialog>
 #include <QDebug>
 #include <QMessageBox>
+#include "opencv2/opencv.hpp"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -27,17 +28,23 @@ void MainWindow::createActions()
     openAction_ = new QAction("Open", this);
     saveAsAction_ = new QAction("Save As", this);
     exitAction_ = new QAction("Exit", this);
+
     zoomInAction_ = new QAction("Zoom In", this);
     zoomOutAction_ = new QAction("Zoom Out", this);
     previousImageAction_ = new QAction("Previous Image", this);
     nextImageAction_ = new QAction("Next Image", this);
 
+    blurAction_ = new QAction("Blur", this);
+
     // disable action when imageScene_ is clear.
     saveAsAction_->setEnabled(false);
+
     zoomInAction_->setEnabled(false);
     zoomOutAction_->setEnabled(false);
     previousImageAction_->setEnabled(false);
     nextImageAction_->setEnabled(false);
+
+    blurAction_->setEnabled(false);
 
     // add action to the menu bar
     fileMenu_->addAction(openAction_);
@@ -50,6 +57,8 @@ void MainWindow::createActions()
     viewMenu_->addAction(previousImageAction_);
     viewMenu_->addAction(nextImageAction_);
 
+    editMenu_->addAction(blurAction_);
+
     // add action to the tool bar
     fileToolBar_->addAction(openAction_);
 
@@ -57,6 +66,8 @@ void MainWindow::createActions()
     viewToolBar_->addAction(zoomOutAction_);
     viewToolBar_->addAction(previousImageAction_);
     viewToolBar_->addAction(nextImageAction_);
+
+    editToolBar_->addAction(blurAction_);
 
     // connect signal to slots
     connect(openAction_, SIGNAL(triggered(bool)), this, SLOT(openImage()));
@@ -67,6 +78,8 @@ void MainWindow::createActions()
     connect(zoomOutAction_, SIGNAL(triggered(bool)), this, SLOT(zoomOut()));
     connect(previousImageAction_, SIGNAL(triggered(bool)), this, SLOT(previousImage()));
     connect(nextImageAction_, SIGNAL(triggered(bool)), this, SLOT(nextImage()));
+
+    connect(blurAction_, SIGNAL(triggered(bool)), this, SLOT(blurImage()));
 }
 
 void MainWindow::createShortcuts()
@@ -101,10 +114,12 @@ void MainWindow::initUI()
     // add to the menu bar
     fileMenu_ = menuBar()->addMenu("File");
     viewMenu_ = menuBar()->addMenu("View");
+    editMenu_ = menuBar()->addMenu("Edit");
 
     // add to the tool bar
     fileToolBar_ = addToolBar("File");
     viewToolBar_ = addToolBar("View");
+    editToolBar_ = addToolBar("Edit");
 
     createActions();
     createShortcuts();
@@ -168,6 +183,8 @@ void MainWindow::openImage()
     zoomOutAction_->setEnabled(true);
     previousImageAction_->setEnabled(true);
     nextImageAction_->setEnabled(true);
+
+    blurAction_->setEnabled(true);
 }
 
 void MainWindow::saveAs()
@@ -258,4 +275,38 @@ void MainWindow::nextImage()
         nextImageAction_->setEnabled(false);
         QMessageBox::information(this, "Information", "Current image is the last one.");
     }
+}
+
+void MainWindow::blurImage()
+{
+    qDebug() << "blurImage()";
+    if (currentImage_ == nullptr)
+    {
+        QMessageBox::information(this, "Information", "No image to edit.");
+        return;
+    }
+
+    QPixmap pixmap = currentImage_->pixmap();
+    QImage image = pixmap.toImage();
+
+    image = image.convertToFormat(QImage::Format_RGB888);
+    cv::Mat mat = cv::Mat(image.height(), image.width(), CV_8UC3, image.bits(), image.bytesPerLine());
+
+    cv::Mat tmp;
+    cv::blur(mat, tmp, cv::Size(8,8));
+    mat = tmp;
+
+    QImage image_blurred(mat.data, mat.cols, mat.rows, mat.step, QImage::Format_RGB888);
+    pixmap = QPixmap::fromImage(image_blurred);
+
+    imageScene_->clear();
+    imageView_->resetTransform();
+
+    currentImage_ = imageScene_->addPixmap(pixmap);
+    imageScene_->update();
+    imageView_->setSceneRect(pixmap.rect());
+
+    QString status = QString("(edited image),%1%2").arg(pixmap.width()).arg(pixmap.height());
+
+    mainStatusLabel_->setText(status);
 }
