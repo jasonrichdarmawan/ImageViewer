@@ -306,7 +306,7 @@ void MainWindow::blurImage()
     imageScene_->update();
     imageView_->setSceneRect(pixmap.rect());
 
-    QString status = QString("(edited image),%1%2").arg(pixmap.width()).arg(pixmap.height());
+    QString status = QString("(edited image),%1x%2").arg(pixmap.width()).arg(pixmap.height());
 
     mainStatusLabel_->setText(status);
 }
