@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QMessageBox>
 #include "opencv2/opencv.hpp"
+#include <QPluginLoader>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -20,6 +21,86 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
 //    delete ui;
+}
+
+void MainWindow::pluginPerform()
+{
+    qDebug() << "pluginPerform triggered";
+
+    if (currentImage_ == nullptr)
+    {
+        QMessageBox::information(this, "Information", "No image to edit.");
+        return;
+    }
+
+    // Go to: void MainWindow::loadPlugins()
+    // connect(action, ..., ..., ...); is equal to
+    // connect(sender(), ..., ..., ....);
+    // *active_action will be destroyed when it goes out of scope.
+    QAction *active_action = qobject_cast<QAction*>(sender());
+
+    EditorPluginInterface *plugin_ptr = editPlugins_[active_action->text()];
+    if (!plugin_ptr)
+    {
+        QMessageBox::information(this, "Information", "No plugin is found.");
+        return;
+    }
+
+    QPixmap pixmap = currentImage_->pixmap();
+    QImage image = pixmap.toImage();
+    image = image.convertToFormat(QImage::Format_RGB888);
+    cv::Mat mat = cv::Mat(image.height(), image.width(), CV_8UC3, image.bits(), image.bytesPerLine());
+
+    plugin_ptr->edit(mat, mat);
+    QImage image_edited(mat.data, mat.cols, mat.rows, mat.step, QImage::Format_RGB888);
+
+    pixmap = QPixmap::fromImage(image_edited);
+    imageScene_->clear();
+    imageView_->resetTransform();
+    currentImage_ = imageScene_->addPixmap(pixmap);
+    imageScene_->update();
+    imageView_->setSceneRect(pixmap.rect());
+
+    QString status = QString("(edited image), %1x%2").arg(pixmap.width()).arg(pixmap.height());
+    mainStatusLabel_->setText(status);
+}
+
+void MainWindow::loadPlugins()
+{
+
+    QDir pluginsDir(QApplication::instance()->applicationDirPath()+"/plugins");
+
+    QStringList nameFilters;
+    // *.so for GNU/Linux, *.dylib for MacOS, *.dll for Windows
+    nameFilters << "*.so" << "*.dylib" << "*.dll";
+    // QDir::NoDotAndDotDot excludes the entries for the current directory "." and the parent directory ".." from the list of entries.
+    QFileInfoList plugins = pluginsDir.entryInfoList(nameFilters, QDir::NoDotAndDotDot | QDir::Files, QDir::Name);
+
+    qDebug() << pluginsDir;
+
+    for (const QFileInfo& plugin : plugins)
+    {
+        QPluginLoader pluginLoader(plugin.absoluteFilePath(), this);
+        EditorPluginInterface *plugin_ptr = dynamic_cast<EditorPluginInterface*>(pluginLoader.instance());
+
+        if (plugin_ptr)
+        {
+            QAction *action = new QAction(plugin_ptr->name());
+
+            action->setEnabled(false);
+
+            editMenu_->addAction(action);
+            editToolBar_->addAction(action);
+
+            editPlugins_[plugin_ptr->name()] = plugin_ptr;
+
+            connect(action, SIGNAL(triggered(bool)), this, SLOT(pluginPerform()));
+        }
+        else
+        {
+            qDebug() << "bad plugin: " << plugin.absoluteFilePath();
+        }
+    }
 }
 
 void MainWindow::createActions()
@@ -124,6 +205,8 @@ void MainWindow::initUI()
     createActions();
     createShortcuts();
 
+    loadPlugins();
+
     // main area for image display
     imageScene_ = new QGraphicsScene(this);
     imageView_ = new QGraphicsView(imageScene_);
@@ -185,6 +268,21 @@ void MainWindow::openImage()
     nextImageAction_->setEnabled(true);
 
     blurAction_->setEnabled(true);
+
+    for (auto it = editPlugins_.cbegin(); it != editPlugins_.cend(); it++)
+    {
+        const EditorPluginInterface *plugin = it.value();
+
+        QList<QAction *> actions = editMenu_->actions();
+        for (auto actionIt = actions.begin(); actionIt != actions.end(); actionIt++)
+        {
+            QAction* action = *actionIt;
+            if (action->text() == plugin->name())
+            {
+                action->setEnabled(true);
+            }
+        }
+    }
 }
 
 void MainWindow::saveAs()

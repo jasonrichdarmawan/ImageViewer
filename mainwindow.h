@@ -8,6 +8,9 @@
 #include <QToolBar>
 #include <QLabel>
 
+#include <QMap>
+#include "editor_plugin_interface.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -21,12 +24,16 @@ public:
     ~MainWindow();
 
 private:
+    void loadPlugins();
+
     void createActions();
     void createShortcuts();
     void initUI();
     void showImage(QString path);
 
 private:
+    QMap<QString, EditorPluginInterface*> editPlugins_;
+
 //    Ui::MainWindow *ui;
     QMenu *fileMenu_;
     QMenu *viewMenu_;
@@ -56,6 +63,8 @@ private:
     QLabel *mainStatusLabel_;
 
 private slots:
+    void pluginPerform();
+
     void openImage();
     void saveAs();
 
